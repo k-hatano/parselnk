@@ -118,7 +118,7 @@ void parseLnk(unsigned char *bytes, unsigned int filesize) {
 
     if ((flags & hasLnkInfoMask) > 0) {
         lnkInfoSize = bytesToLong(bytes, lnkInfoIndex) + 4;
-    	printf("lnkinfo available (size : %d)\n", lnkInfoSize);
+        printf("lnkinfo available (size : %d)\n", lnkInfoSize);
     }
 
     unsigned int stringDataIndex = lnkInfoIndex + lnkInfoSize;
@@ -130,12 +130,12 @@ void parseLnk(unsigned char *bytes, unsigned int filesize) {
     	unsigned int filenameIndexInBytes = 0x18;
     	unsigned int localBaseIndex = bytes[lnkInfoIndex + localBaseIndexInBytes] + lnkInfoIndex;
     	unsigned int commonNetworkLinkIndex = bytes[lnkInfoIndex + commonNetworkLinkIndexInBytes + 8] + lnkInfoIndex;	
-     	unsigned int filenameIndex = bytes[lnkInfoIndex + filenameIndexInBytes] + lnkInfoIndex;
+      unsigned int filenameIndex = bytes[lnkInfoIndex + filenameIndexInBytes] + lnkInfoIndex;
 
-    	printf("localBase(%d) = %s\n", localBaseIndex, &bytes[localBaseIndex]);
-    	printf("commonNetworkLink(%d) = %s\n", commonNetworkLinkIndex, &bytes[commonNetworkLinkIndex]);
-    	printf("filename(%d) = %s\n", filenameIndex, &bytes[filenameIndex]);
-	}
+      printf("localBase(%d) = %s\n", localBaseIndex, &bytes[localBaseIndex]);
+      printf("commonNetworkLink(%d) = %s\n", commonNetworkLinkIndex, &bytes[commonNetworkLinkIndex]);
+      printf("filename(%d) = %s\n", filenameIndex, &bytes[filenameIndex]);
+  }
 }
 
 unsigned short bytesToShort(unsigned char *bytes, unsigned int index) {
@@ -145,8 +145,8 @@ unsigned short bytesToShort(unsigned char *bytes, unsigned int index) {
 
 unsigned long bytesToLong(unsigned char *bytes, unsigned int index) {
     unsigned long result = 
-    	((bytes[index + 3] & 0xff) << 24) | ((bytes[index + 2] & 0xff) << 16) | 
-    	((bytes[index + 1] & 0xff) << 8) | (bytes[index] & 0xff);
+    ((bytes[index + 3] & 0xff) << 24) | ((bytes[index + 2] & 0xff) << 16) | 
+    ((bytes[index + 1] & 0xff) << 8) | (bytes[index] & 0xff);
     return result;
 }
 
