@@ -4,56 +4,83 @@
 
 #define BYTES_SIZE 1024
 
+typedef struct {
+    unsigned int localBaseIndex;
+    unsigned int commonNetworkLinkIndex;
+    unsigned int commonPathSuffixIndex;
+} lnkIndexes;
+
 void printContent(unsigned char *bytes, unsigned int filesize);
-void parseLnk(unsigned char *bytes, unsigned int filesize);
+lnkIndexes parseLnk(unsigned char *bytes, unsigned int filesize);
 unsigned short bytesToShort(unsigned char *bytes, unsigned int index);
 unsigned long bytesToLong(unsigned char *bytes, unsigned int index);
 void fixEndian(unsigned char *bytes, unsigned int index);
 
 int main(int args,  char** argv) {
-	unsigned char bytes[BYTES_SIZE];
-	int byteAsInt;
-	FILE *file;
-	int filesize = 0;
+    lnkIndexes result;
+    unsigned char bytes[BYTES_SIZE];
+    int byteAsInt;
+    FILE *file;
+    int filesize = 0;
 
-	if (args < 2) {
-		printf("Error : missing file name\n");
-		return 1;
-	}
+    if (args < 2) {
+        printf("Error : missing file name\n");
+        return 1;
+    }
 
-	file = fopen(argv[1], "r");
-	if (file == NULL) {
-		printf("Error : failed opening file\n");
-		return 1;
-	}
+    file = fopen(argv[1], "r");
+    if (file == NULL) {
+        printf("Error : failed opening file\n");
+        return 1;
+    }
 
-	while ((byteAsInt = fgetc(file)) != EOF && filesize < BYTES_SIZE) {
-		bytes[filesize] = (unsigned char)byteAsInt;
-		filesize++;
-	}
+    while ((byteAsInt = fgetc(file)) != EOF && filesize < BYTES_SIZE) {
+        bytes[filesize] = (unsigned char)byteAsInt;
+        filesize++;
+    }
 
-	parseLnk(bytes, filesize);
+    result = parseLnk(bytes, filesize);
 
-	fclose(file);
+    if (result.localBaseIndex > 0) {
+        printf("localBase(#%d) = %s\n", result.localBaseIndex, &bytes[result.localBaseIndex]);
+    } else {
+        printf("localBase unavailable\n");
+    }
 
-	return 0;
+    if (result.commonNetworkLinkIndex > 0) {
+        printf("commonNetworkLink(#%d) = %s\n", result.commonNetworkLinkIndex, &bytes[result.commonNetworkLinkIndex]);
+    } else {
+        printf("commonNetworkLink unavailable\n");
+    }
+
+    if (result.commonPathSuffixIndex > 0) {
+        printf("commonPathSuffix(#%d) = %s\n", result.commonPathSuffixIndex, &bytes[result.commonPathSuffixIndex]);
+    } else {
+        printf("commonPathSuffix unavailable\n");
+    }
+
+    fclose(file);
+
+    return 0;
 }
 
 void printContent(unsigned char *bytes, unsigned int filesize) {
-	int i;
+    int i;
 
-	for (i = 0; i < filesize; i++) {
-		printf("%02x ", bytes[i]);
-		if (i % 16 == 15) {
-			printf("\n");
-		}
-	}
+    for (i = 0; i < filesize; i++) {
+        printf("%02x ", bytes[i]);
+        if (i % 16 == 15) {
+            printf("\n");
+        }
+    }
 }
 
-void parseLnk(unsigned char *bytes, unsigned int filesize) {
-	unsigned int i;
+lnkIndexes parseLnk(unsigned char *bytes, unsigned int filesize) {
+    lnkIndexes result = {0, 0, 0};
 
-	unsigned int directoryFlag;
+    unsigned int i;
+
+    unsigned int directoryFlag;
 
     unsigned char flags = bytes[0x14];
 
@@ -69,47 +96,41 @@ void parseLnk(unsigned char *bytes, unsigned int filesize) {
         directoryFlag = 0;
     }
 
-    if ((flags & 0x01) > 0) {
-    	printf("o  target ID list\n");
-    } else {
-    	printf("x  target ID list\n");
-    }
+    printf("-- #0 shell link header --\n");
 
-    if ((flags & 0x02) > 0) {
-    	printf("o  link info\n");
-    } else {
-    	printf("x  link info\n");
-    }
+    printf("linkFlags = 0x%x\n", flags);
 
-    if ((flags & 0x04) > 0) {
-    	printf("o  name\n");
-    } else {
-    	printf("x  name\n");
-    }
+    printf(" %c  target ID list\n",    (flags & 0x01) > 0 ? 'o' : 'x');
+    printf(" %c  link info\n",         (flags & 0x02) > 0 ? 'o' : 'x');
+    printf(" %c  name\n",              (flags & 0x04) > 0 ? 'o' : 'x');
+    printf(" %c  relative path\n",     (flags & 0x08) > 0 ? 'o' : 'x');
+    printf(" %c  working dir\n",       (flags & 0x10) > 0 ? 'o' : 'x');
+    printf(" %c  arguments\n",         (flags & 0x20) > 0 ? 'o' : 'x');
+    printf(" %c  icon location\n",     (flags & 0x40) > 0 ? 'o' : 'x');
+    printf(" %c  unicode\n",           (flags & 0x80) > 0 ? 'o' : 'x');
 
-    if ((flags & 0x08) > 0) {
-    	printf("o  relative path\n");
-    } else {
-    	printf("x  relative path\n");
-    }
+    printf("fileAttributes = 0x%x\n", attributes);
 
-    if ((flags & 0x10) > 0) {
-    	printf("o  working dir\n");
-    } else {
-    	printf("x  working dir\n");
-    }
-
-    if ((flags & 0x14) > 0) {
-    	printf("o  unicode\n");
-    } else {
-    	printf("x  unicode\n");
-    }
+    printf(" %c  read only\n",    (attributes & 0x01) > 0 ? 'o' : 'x');
+    printf(" %c  hidden\n",       (attributes & 0x02) > 0 ? 'o' : 'x');
+    printf(" %c  system\n",       (attributes & 0x04) > 0 ? 'o' : 'x');
+    printf(" %c  reserved1\n",    (attributes & 0x08) > 0 ? 'o' : 'x');
+    printf(" %c  directory\n",    (attributes & 0x10) > 0 ? 'o' : 'x');
+    printf(" %c  archive\n",      (attributes & 0x20) > 0 ? 'o' : 'x');
+    printf(" %c  reserved2\n",    (attributes & 0x40) > 0 ? 'o' : 'x');
+    printf(" %c  normal\n",       (attributes & 0x80) > 0 ? 'o' : 'x');
+    printf(" %c  temporary\n",    (attributes & 0x100) > 0 ? 'o' : 'x');
+    printf(" %c  sparse file\n",  (attributes & 0x200) > 0 ? 'o' : 'x');
+    printf(" %c  compressed\n",   (attributes & 0x400) > 0 ? 'o' : 'x');
+    printf(" %c  offline\n",      (attributes & 0x800) > 0 ? 'o' : 'x');
+    printf(" %c  content unindexed\n", (attributes & 0x1000) > 0 ? 'o' : 'x');
+    printf(" %c  encrypted\n",    (attributes & 0x2000) > 0 ? 'o' : 'x');
 
     unsigned int linkTargetIDIndex = 0x4c;
     unsigned int linkTargetIDSize = 0;
     if ((flags & 0x01) > 0) {
-    	linkTargetIDSize = bytesToShort(bytes, linkTargetIDIndex) + 2;
-    	printf("lnkTargetIDList available (size : %d)\n", linkTargetIDSize);
+        linkTargetIDSize = bytesToShort(bytes, linkTargetIDIndex) + 2;
+        printf("-- #%d link target list (size : %d) --\n", linkTargetIDIndex, linkTargetIDSize);
     }
 
     unsigned int lnkInfoIndex = linkTargetIDIndex + linkTargetIDSize;
@@ -118,24 +139,25 @@ void parseLnk(unsigned char *bytes, unsigned int filesize) {
 
     if ((flags & hasLnkInfoMask) > 0) {
         lnkInfoSize = bytesToLong(bytes, lnkInfoIndex) + 4;
-        printf("lnkinfo available (size : %d)\n", lnkInfoSize);
+        printf("-- #%d link info (size : %d) --\n", lnkInfoIndex, lnkInfoSize);
     }
 
     unsigned int stringDataIndex = lnkInfoIndex + lnkInfoSize;
 
-    printf("stringDataIndex = %d\n", stringDataIndex);
     if (lnkInfoSize > 0) {
-    	unsigned int localBaseIndexInBytes = 0x10;
-    	unsigned int commonNetworkLinkIndexInBytes = 0x14;
-    	unsigned int filenameIndexInBytes = 0x18;
-    	unsigned int localBaseIndex = bytes[lnkInfoIndex + localBaseIndexInBytes] + lnkInfoIndex;
-    	unsigned int commonNetworkLinkIndex = bytes[lnkInfoIndex + commonNetworkLinkIndexInBytes + 8] + lnkInfoIndex;	
-      unsigned int filenameIndex = bytes[lnkInfoIndex + filenameIndexInBytes] + lnkInfoIndex;
+        unsigned int localBaseIndexInBytes = 0x10;
+        unsigned int commonNetworkLinkIndexInBytes = 0x14;
+        unsigned int commonPathSuffixIndexInBytes = 0x18;
+        unsigned int localBaseIndex = bytes[lnkInfoIndex + localBaseIndexInBytes] + lnkInfoIndex;
+        unsigned int commonNetworkLinkIndex = bytes[lnkInfoIndex + commonNetworkLinkIndexInBytes] + lnkInfoIndex + 0x14;	
+        unsigned int commonPathSuffixIndex = bytes[lnkInfoIndex + commonPathSuffixIndexInBytes] + lnkInfoIndex;
 
-      printf("localBase(%d) = %s\n", localBaseIndex, &bytes[localBaseIndex]);
-      printf("commonNetworkLink(%d) = %s\n", commonNetworkLinkIndex, &bytes[commonNetworkLinkIndex]);
-      printf("filename(%d) = %s\n", filenameIndex, &bytes[filenameIndex]);
-  }
+        result.localBaseIndex = bytes[lnkInfoIndex + localBaseIndexInBytes] > 0 ? localBaseIndex : 0;
+        result.commonNetworkLinkIndex = bytes[lnkInfoIndex + commonNetworkLinkIndexInBytes] > 0 ? commonNetworkLinkIndex : 0;
+        result.commonPathSuffixIndex = bytes[lnkInfoIndex + commonPathSuffixIndexInBytes] > 0 ? commonPathSuffixIndex : 0;
+    }
+
+    return result;
 }
 
 unsigned short bytesToShort(unsigned char *bytes, unsigned int index) {
@@ -151,16 +173,16 @@ unsigned long bytesToLong(unsigned char *bytes, unsigned int index) {
 }
 
 void fixEndian(unsigned char *bytes, unsigned int index) {
-	unsigned int i = index;
-	while (bytes[i] == 0) {
-		if (bytes[i] > 0x80) {
-			unsigned char tmp = bytes[i + 1];
-			bytes[i + 1] = bytes[i];
-			bytes[i] = tmp;
-			i += 2;
-		} else {
-			i++;
-		}
-	}
+    unsigned int i = index;
+    while (bytes[i] == 0) {
+        if (bytes[i] > 0x80) {
+            unsigned char tmp = bytes[i + 1];
+            bytes[i + 1] = bytes[i];
+            bytes[i] = tmp;
+            i += 2;
+        } else {
+            i++;
+        }
+    }
 }
 
