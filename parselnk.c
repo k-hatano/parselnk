@@ -32,24 +32,6 @@ int main(int args,  char** argv) {
 
     result = parseLnk(bytes, filesize);
 
-    if (result.localBaseIndex > 0) {
-        printf("localBase(#%d) = %s\n", result.localBaseIndex, &bytes[result.localBaseIndex]);
-    } else {
-        printf("localBase unavailable\n");
-    }
-
-    if (result.commonNetworkLinkIndex > 0) {
-        printf("commonNetworkLink(#%d) = %s\n", result.commonNetworkLinkIndex, &bytes[result.commonNetworkLinkIndex]);
-    } else {
-        printf("commonNetworkLink unavailable\n");
-    }
-
-    if (result.commonPathSuffixIndex > 0) {
-        printf("commonPathSuffix(#%d) = %s\n", result.commonPathSuffixIndex, &bytes[result.commonPathSuffixIndex]);
-    } else {
-        printf("commonPathSuffix unavailable\n");
-    }
-
     fclose(file);
 
     return 0;
@@ -129,7 +111,7 @@ lnkIndexes parseLnk(unsigned char *bytes, unsigned int filesize) {
     unsigned int lnkInfoSize = 0;
 
     if ((flags & hasLnkInfoMask) > 0) {
-        lnkInfoSize = bytesToLong(bytes, lnkInfoIndex) + 4;
+        lnkInfoSize = bytesToShort(bytes, lnkInfoIndex);
         printf("-- #%d link info (size : %d) --\n", lnkInfoIndex, lnkInfoSize);
     }
 
@@ -146,6 +128,49 @@ lnkIndexes parseLnk(unsigned char *bytes, unsigned int filesize) {
         result.localBaseIndex = bytes[lnkInfoIndex + localBaseIndexInBytes] > 0 ? localBaseIndex : 0;
         result.commonNetworkLinkIndex = bytes[lnkInfoIndex + commonNetworkLinkIndexInBytes] > 0 ? commonNetworkLinkIndex : 0;
         result.commonPathSuffixIndex = bytes[lnkInfoIndex + commonPathSuffixIndexInBytes] > 0 ? commonPathSuffixIndex : 0;
+    }
+
+    if (result.localBaseIndex > 0) {
+        printf("localBase(#%d) = %s\n", result.localBaseIndex, &bytes[result.localBaseIndex]);
+    } else {
+        printf("localBase unavailable\n");
+    }
+
+    if (result.commonNetworkLinkIndex > 0) {
+        printf("commonNetworkLink(#%d) = %s\n", result.commonNetworkLinkIndex, &bytes[result.commonNetworkLinkIndex]);
+    } else {
+        printf("commonNetworkLink unavailable\n");
+    }
+
+    if (result.commonPathSuffixIndex > 0) {
+        printf("commonPathSuffix(#%d) = %s\n", result.commonPathSuffixIndex, &bytes[result.commonPathSuffixIndex]);
+    } else {
+        printf("commonPathSuffix unavailable\n");
+    }
+
+    printf("-- #%d string data --\n", stringDataIndex);
+    if ((flags & 0x08) > 0) {
+        printf("relativePath(#%d) = ", stringDataIndex);
+        unsigned int relativePathIndex = stringDataIndex;
+        unsigned int relativePathSize = bytes[stringDataIndex] * 2 + 2;
+        for (i = relativePathIndex + 2; i < relativePathIndex + relativePathSize; i += 2) {
+            if (bytes[i + 1] != 0) {
+                printf("%c", bytes[i + 1]);
+            }
+            if (bytes[i] != 0) {
+                printf("%c", bytes[i]);
+            }
+        }
+        printf("\n");
+        for (i = relativePathIndex + 2; i < relativePathIndex + relativePathSize; i += 2) {
+            if (bytes[i] != 0) {
+                printf("%c", bytes[i]);
+            }
+            if (bytes[i + 1] != 0) {
+                printf("%c", bytes[i + 1]);
+            }
+        }
+        printf("\n");
     }
 
     return result;
